@@ -1,0 +1,52 @@
+﻿using UnityEngine;
+
+public class TesteAPIFast : MonoBehaviour
+{
+    private APIAutoStarterFast apiStarter;
+    private bool testeExecutado = false;
+
+    void Start()
+    {
+        UnityEngine.Debug.Log("🎯 Aguardando API (5s)...");
+        apiStarter = FindObjectOfType<APIAutoStarterFast>();
+    }
+
+    void Update()
+    {
+        if (!testeExecutado && apiStarter != null && apiStarter.IsAPIReady())
+        {
+            testeExecutado = true;
+            ExecutarTesteRapido();
+        }
+    }
+
+    async void ExecutarTesteRapido()
+    {
+        UnityEngine.Debug.Log("🔥 TESTE RÁPIDO INICIADO!");
+
+        GameApiService api = new GameApiService();
+
+        Player player = new Player
+        {
+            Vida = 100,
+            QuantidadeItens = 5,
+            PosicaoX = 10.5f,
+            PosicaoY = 2.0f,
+            PosicaoZ = 15.3f
+        };
+
+        Player resultado = await api.CriarJogador(player);
+
+        if (resultado != null)
+        {
+            UnityEngine.Debug.Log("🎉 PLAYER CRIADO! ID: " + resultado.id);
+        }
+        else
+        {
+            UnityEngine.Debug.LogError("❌ Falha no teste");
+        }
+
+        api.Dispose();
+        enabled = false;
+    }
+}

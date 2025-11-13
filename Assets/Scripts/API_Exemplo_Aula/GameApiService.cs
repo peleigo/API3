@@ -1,0 +1,204 @@
+﻿using System;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using UnityEngine;
+
+public class GameApiService
+{
+    private readonly HttpClient httpClient;
+    private const string BASE_URL = "http://localhost:5158/api/player";
+
+    public GameApiService()
+    {
+        httpClient = new HttpClient();
+        Debug.Log("🛠️ GameApiService INICIADO");
+    }
+
+    /// <summary>
+    /// Busca todos os players
+    /// </summary>
+    public async Task<Player[]> GetTodosJogadores()
+    {
+        try
+        {
+            string url = BASE_URL;
+            Debug.Log($"🔍 GET TODOS: {url}");
+
+            HttpResponseMessage response = await httpClient.GetAsync(url);
+            Debug.Log($"📡 STATUS: {response.StatusCode}");
+
+            response.EnsureSuccessStatusCode();
+
+            string json = await response.Content.ReadAsStringAsync();
+            Debug.Log($"📦 RESPOSTA: {json}");
+
+            string wrappedJson = $"{{\"players\":{json}}}";
+            PlayerArray playerArray = JsonUtility.FromJson<PlayerArray>(wrappedJson);
+
+            Debug.Log($"✅ PLAYERS ENCONTRADOS: {playerArray.players?.Length ?? 0}");
+            return playerArray.players;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"❌ ERRO GET TODOS: {ex.Message}");
+            return new Player[0];
+        }
+    }
+
+    /// <summary>
+    /// Busca um player específico
+    /// </summary>
+    public async Task<Player> GetJogador(string id)
+    {
+        try
+        {
+            string url = $"{BASE_URL}/{id}";
+            Debug.Log($"🔍 GET PLAYER: {url}");
+
+            HttpResponseMessage response = await httpClient.GetAsync(url);
+            Debug.Log($"📡 STATUS: {response.StatusCode}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Debug.Log($"⚠️ PLAYER {id} NÃO ENCONTRADO");
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            string json = await response.Content.ReadAsStringAsync();
+            Debug.Log($"📦 RESPOSTA: {json}");
+
+            Player player = JsonUtility.FromJson<Player>(json);
+            Debug.Log($"✅ PLAYER CARREGADO: {player.id}");
+            return player;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"❌ ERRO GET PLAYER: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Atualiza dados do player
+    /// </summary>
+    public async Task<Player> AtualizarJogador(string id, Player player)
+    {
+        try
+        {
+            string url = $"{BASE_URL}/{id}";
+            string json = JsonUtility.ToJson(player);
+
+            Debug.Log($"✏️ PUT ATUALIZAR: {url}");
+            Debug.Log($"📦 JSON ENVIADO: {json}");
+
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await httpClient.PutAsync(url, content);
+
+            Debug.Log($"📡 STATUS: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                string responseJson = await response.Content.ReadAsStringAsync();
+                Debug.Log($"✅ RESPOSTA: {responseJson}");
+
+                Player playerAtualizado = JsonUtility.FromJson<Player>(responseJson);
+                Debug.Log($"🎉 PLAYER ATUALIZADO: {playerAtualizado.id}");
+                return playerAtualizado;
+            }
+            else
+            {
+                string errorContent = await response.Content.ReadAsStringAsync();
+                Debug.LogError($"❌ ERRO HTTP {response.StatusCode}: {errorContent}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"💥 EXCEÇÃO ATUALIZAR: {ex.Message}");
+            Debug.LogError($"📝 STACK TRACE: {ex.StackTrace}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Cria novo player - MÉTODO CORRIGIDO
+    /// </summary>
+    public async Task<Player> CriarJogador(Player player)
+    {
+        try
+        {
+            string url = BASE_URL;
+            string json = JsonUtility.ToJson(player);
+
+            Debug.Log($"POST CRIAR: {url}");
+            Debug.Log($" JSON ENVIADO: {json}");
+
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await httpClient.PostAsync(url, content);
+
+            Debug.Log($"STATUS: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                string responseJson = await response.Content.ReadAsStringAsync();
+                Debug.Log($" RESPOSTA: {responseJson}");
+
+                Player playerCriado = JsonUtility.FromJson<Player>(responseJson);
+                Debug.Log($" PLAYER CRIADO COM ID: {playerCriado?.id}");
+                return playerCriado;
+            }
+            else
+            {
+                string errorContent = await response.Content.ReadAsStringAsync();
+                Debug.LogError($" ERRO HTTP {response.StatusCode}: {errorContent}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($" EXCEÇÃO CRIAR: {ex.Message}");
+            Debug.LogError($" STACK TRACE: {ex.StackTrace}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Remove um player
+    /// </summary>
+    public async Task<bool> RemoverJogador(string id)
+    {
+        try
+        {
+            string url = $"{BASE_URL}/{id}";
+            Debug.Log($" DELETE: {url}");
+
+            HttpResponseMessage response = await httpClient.DeleteAsync(url);
+            Debug.Log($" STATUS: {response.StatusCode}");
+
+            response.EnsureSuccessStatusCode();
+
+            Debug.Log($" PLAYER {id} REMOVIDO");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"❌ ERRO DELETE: {ex.Message}");
+            return false;
+        }
+    }
+
+    public void Dispose()
+    {
+        httpClient?.Dispose();
+        Debug.Log(" GameApiService DISPOSED");
+    }
+}
+
+[System.Serializable]
+public class PlayerArray
+{
+    public Player[] players;
+}

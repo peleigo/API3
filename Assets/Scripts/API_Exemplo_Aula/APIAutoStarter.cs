@@ -1,0 +1,74 @@
+﻿using System.Diagnostics;
+using UnityEngine;
+
+public class APIAutoStarterFast : MonoBehaviour
+{
+    private Process apiProcess;
+    public bool apiReady = false;
+    private float startTime;
+
+    void Start()
+    {
+        UnityEngine.Debug.Log("🎮 INICIANDO API RÁPIDO (5s)...");
+        startTime = Time.time;
+        StartAPIFast();
+    }
+
+    void Update()
+    {
+        float tempoDecorrido = Time.time - startTime;
+
+        if (!apiReady && tempoDecorrido > 5f)
+        {
+            apiReady = true;
+            UnityEngine.Debug.Log("✅ API PRONTA EM " + tempoDecorrido.ToString("F1") + " SEGUNDOS!");
+        }
+
+        // Feedback a cada segundo
+        if (!apiReady && tempoDecorrido < 5f)
+        {
+            if (tempoDecorrido > 1f && tempoDecorrido < 1.1f) UnityEngine.Debug.Log("⏳ 1 segundo...");
+            else if (tempoDecorrido > 2f && tempoDecorrido < 2.1f) UnityEngine.Debug.Log("⏳ 2 segundos...");
+            else if (tempoDecorrido > 3f && tempoDecorrido < 3.1f) UnityEngine.Debug.Log("⏳ 3 segundos...");
+            else if (tempoDecorrido > 4f && tempoDecorrido < 4.1f) UnityEngine.Debug.Log("⏳ 4 segundos...");
+        }
+    }
+
+    void StartAPIFast()
+    {
+        try
+        {
+            string projectPath = @"C:\Users\00119012.UNISOACAD\source\repos\WebPlayerAPI";
+
+            // Usa cmd para iniciar mais rápido
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = "cmd.exe";
+            startInfo.Arguments = $"/C dotnet run --no-build --verbosity quiet";
+            startInfo.WorkingDirectory = projectPath;
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            startInfo.CreateNoWindow = true;
+            startInfo.UseShellExecute = false;
+
+            apiProcess = Process.Start(startInfo);
+            UnityEngine.Debug.Log("🚀 API INICIADA (modo rápido)");
+        }
+        catch (System.Exception ex)
+        {
+            UnityEngine.Debug.LogError("❌ Erro: " + ex.Message);
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        if (apiProcess != null && !apiProcess.HasExited)
+        {
+            apiProcess.Kill();
+            UnityEngine.Debug.Log("🛑 API parada");
+        }
+    }
+
+    public bool IsAPIReady()
+    {
+        return apiReady;
+    }
+}
